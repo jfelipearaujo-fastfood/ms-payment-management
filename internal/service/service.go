@@ -11,11 +11,11 @@ type CreatePaymentService[T any] interface {
 }
 
 type GetPaymentByIDService[T any] interface {
-	Handle(ctx context.Context, id string) (payment_entity.Payment, error)
+	Handle(ctx context.Context, request T) (payment_entity.Payment, error)
 }
 
 type GetPaymentsByOrderIDService[T any] interface {
-	Handle(ctx context.Context, orderId string) ([]payment_entity.Payment, error)
+	Handle(ctx context.Context, request T) ([]payment_entity.Payment, error)
 }
 
 type UpdatePaymentService[T any] interface {
