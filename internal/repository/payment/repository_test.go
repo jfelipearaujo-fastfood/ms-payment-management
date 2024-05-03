@@ -108,7 +108,7 @@ func TestGetByID(t *testing.T) {
 		assert.Empty(t, payment)
 	})
 
-	t.Run("Should return empty payment if no payment found", func(t *testing.T) {
+	t.Run("Should return error payment if no payment found", func(t *testing.T) {
 		// Arrange
 		db, mock, err := sqlmock.New()
 		assert.NoError(t, err)
@@ -125,7 +125,7 @@ func TestGetByID(t *testing.T) {
 		payment, err := repo.GetByID(ctx, "payment_id")
 
 		// Assert
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		assert.Empty(t, payment)
 	})
 
