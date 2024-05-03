@@ -6,6 +6,7 @@ import (
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/entity/payment_entity"
+	"github.com/jfelipearaujo-org/ms-payment-management/internal/shared/custom_error"
 )
 
 type PaymentRepository struct {
@@ -77,6 +78,10 @@ func (r *PaymentRepository) GetByID(ctx context.Context, paymentId string) (paym
 		if err != nil {
 			return payment_entity.Payment{}, err
 		}
+	}
+
+	if payment.OrderId == "" {
+		return payment_entity.Payment{}, custom_error.ErrPaymentNotFound
 	}
 
 	return payment, nil
