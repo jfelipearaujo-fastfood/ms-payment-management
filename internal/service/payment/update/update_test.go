@@ -182,4 +182,64 @@ func TestHandle(t *testing.T) {
 		repository.AssertExpectations(t)
 		timeProvider.AssertExpectations(t)
 	})
+
+	t.Run("Should not update the payment when the payment is already approved", func(t *testing.T) {
+		// Arrange
+		ctx := context.Background()
+
+		repository := repository_mocks.NewMockPaymentRepository(t)
+		timeProvider := provider_mocks.NewMockTimeProvider(t)
+
+		repository.On("GetByID", ctx, mock.Anything).
+			Return(payment_entity.Payment{
+				State: payment_entity.Approved,
+			}, nil).
+			Once()
+
+		service := NewService(repository, timeProvider)
+
+		req := UpdatePaymentDTO{
+			PaymentId: uuid.NewString(),
+			Approved:  true,
+		}
+
+		// Act
+		payment, err := service.Handle(ctx, req)
+
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, payment)
+		repository.AssertExpectations(t)
+		timeProvider.AssertExpectations(t)
+	})
+
+	t.Run("Should not update the payment when the payment is already rejected", func(t *testing.T) {
+		// Arrange
+		ctx := context.Background()
+
+		repository := repository_mocks.NewMockPaymentRepository(t)
+		timeProvider := provider_mocks.NewMockTimeProvider(t)
+
+		repository.On("GetByID", ctx, mock.Anything).
+			Return(payment_entity.Payment{
+				State: payment_entity.Rejected,
+			}, nil).
+			Once()
+
+		service := NewService(repository, timeProvider)
+
+		req := UpdatePaymentDTO{
+			PaymentId: uuid.NewString(),
+			Approved:  false,
+		}
+
+		// Act
+		payment, err := service.Handle(ctx, req)
+
+		// Assert
+		assert.Error(t, err)
+		assert.Nil(t, payment)
+		repository.AssertExpectations(t)
+		timeProvider.AssertExpectations(t)
+	})
 }

@@ -12,9 +12,12 @@ import (
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/adapter/database"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/environment"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/handler/health"
+	"github.com/jfelipearaujo-org/ms-payment-management/internal/handler/payment_hook"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/provider/time_provider"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/repository/payment"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/create"
+	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/gateway"
+	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/update"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -45,16 +48,23 @@ func NewServer(config *environment.Config) *Server {
 	timeProvider := time_provider.NewTimeProvider(time.Now)
 	paymentRepository := payment.NewPaymentRepository(databaseService.GetInstance())
 	createPaymentService := create.NewService(paymentRepository, timeProvider)
+	createPaymentGatewayService := gateway.NewService()
 
 	return &Server{
 		Config:          config,
 		DatabaseService: databaseService,
-		QueueService:    cloud.NewQueueService(config.CloudConfig.OrderPaymentQueue, cloudConfig, createPaymentService),
+		QueueService: cloud.NewQueueService(
+			config.CloudConfig.OrderPaymentQueue,
+			cloudConfig,
+			createPaymentService,
+			createPaymentGatewayService,
+		),
 
 		Dependency: Dependency{
 			TimeProvider:         timeProvider,
 			PaymentRepository:    paymentRepository,
 			CreatePaymentService: createPaymentService,
+			UpdatePaymentService: update.NewService(paymentRepository, timeProvider),
 		},
 	}
 }
@@ -75,6 +85,10 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	s.registerHealthCheck(e)
 
+	group := e.Group(fmt.Sprintf("/api/%s", s.Config.ApiConfig.ApiVersion))
+
+	s.registerOrderHandlers(group)
+
 	return e
 }
 
@@ -82,4 +96,10 @@ func (server *Server) registerHealthCheck(e *echo.Echo) {
 	healthHandler := health.NewHandler(server.DatabaseService)
 
 	e.GET("/health", healthHandler.Handle)
+}
+
+func (s *Server) registerOrderHandlers(e *echo.Group) {
+	updatePaymentHandler := payment_hook.NewHandler(s.Dependency.UpdatePaymentService)
+
+	e.PATCH("/payments/webhook/:payment_id", updatePaymentHandler.Handle)
 }

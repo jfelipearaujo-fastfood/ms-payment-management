@@ -11,7 +11,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/service"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/create"
+	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/gateway"
 )
+
+type CtxKey string
+
+const MessageId CtxKey = "message_id"
 
 type QueueService interface {
 	GetQueueName() string
@@ -20,104 +25,121 @@ type QueueService interface {
 }
 
 type AwsSqsService struct {
-	QueueName string
-	QueueUrl  string
-	Client    *sqs.Client
+	queueName string
+	queueUrl  string
+	client    *sqs.Client
 
-	MessageProcessor service.CreatePaymentService[create.CreatePaymentDTO]
+	createPayment        service.CreatePaymentService[create.CreatePaymentDTO]
+	createPaymentGateway service.CreatePaymentGatewayService[gateway.CreatePaymentGatewayDTO]
 
-	ChanMessage chan types.Message
+	chanMessage chan types.Message
 
-	Mutex     sync.Mutex
-	WaitGroup sync.WaitGroup
+	mutex     sync.Mutex
+	waitGroup sync.WaitGroup
 }
 
 func NewQueueService(
 	queueName string,
 	config aws.Config,
-	messageProcessor service.CreatePaymentService[create.CreatePaymentDTO],
+	createPayment service.CreatePaymentService[create.CreatePaymentDTO],
+	createPaymentGateway service.CreatePaymentGatewayService[gateway.CreatePaymentGatewayDTO],
 ) QueueService {
 	client := sqs.NewFromConfig(config)
 
 	return &AwsSqsService{
-		QueueName: queueName,
-		Client:    client,
+		queueName: queueName,
+		client:    client,
 
-		MessageProcessor: messageProcessor,
+		createPayment:        createPayment,
+		createPaymentGateway: createPaymentGateway,
 
-		ChanMessage: make(chan types.Message, 10),
+		chanMessage: make(chan types.Message, 10),
 
-		Mutex:     sync.Mutex{},
-		WaitGroup: sync.WaitGroup{},
+		mutex:     sync.Mutex{},
+		waitGroup: sync.WaitGroup{},
 	}
 }
 
 func (s *AwsSqsService) GetQueueName() string {
-	return s.QueueName
+	return s.queueName
 }
 
 func (s *AwsSqsService) UpdateQueueUrl(ctx context.Context) error {
-	output, err := s.Client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
-		QueueName: &s.QueueName,
+	output, err := s.client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+		QueueName: &s.queueName,
 	})
 	if err != nil {
 		return err
 	}
 
-	s.QueueUrl = *output.QueueUrl
+	s.queueUrl = *output.QueueUrl
 
 	return nil
 }
 
 func (s *AwsSqsService) ConsumeMessages(ctx context.Context) {
-	output, err := s.Client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
-		QueueUrl:            &s.QueueUrl,
+	output, err := s.client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
+		QueueUrl:            &s.queueUrl,
 		MaxNumberOfMessages: 10,
 		WaitTimeSeconds:     5,
 	})
 	if err != nil {
-		slog.ErrorContext(ctx, "error receiving message from queue", "queue_url", s.QueueUrl, "error", err)
+		slog.ErrorContext(ctx, "error receiving message from queue", "queue_url", s.queueUrl, "error", err)
 		return
 	}
 
-	s.WaitGroup.Add(len(output.Messages))
+	s.waitGroup.Add(len(output.Messages))
 
 	for _, message := range output.Messages {
 		go s.processMessage(ctx, message)
 	}
 
-	s.WaitGroup.Wait()
+	s.waitGroup.Wait()
 }
 
 func (s *AwsSqsService) processMessage(ctx context.Context, message types.Message) {
-	defer s.WaitGroup.Done()
-	s.Mutex.Lock()
+	defer s.waitGroup.Done()
+	s.mutex.Lock()
 
-	slog.InfoContext(ctx, "message received", "message_id", *message.MessageId)
+	ctx = context.WithValue(ctx, MessageId, *message.MessageId)
+
+	slog.InfoContext(ctx, "message received")
 
 	var request create.CreatePaymentDTO
 
 	err := json.Unmarshal([]byte(*message.Body), &request)
 	if err != nil {
-		slog.ErrorContext(ctx, "error unmarshalling message", "message_id", *message.MessageId, "error", err)
+		slog.ErrorContext(ctx, "error unmarshalling message", "error", err)
 	}
 
 	if err == nil {
-		if _, err := s.MessageProcessor.Handle(ctx, request); err != nil {
-			slog.ErrorContext(ctx, "error processing message", "message_id", *message.MessageId, "error", err)
+		payment, err := s.createPayment.Handle(ctx, request)
+		if err != nil {
+			slog.ErrorContext(ctx, "error create payment", "error", err)
+		}
+
+		if payment != nil {
+			gatewayReq := gateway.CreatePaymentGatewayDTO{
+				PaymentID: payment.PaymentId,
+				Amount:    payment.Amount,
+			}
+
+			if err := s.createPaymentGateway.Handle(ctx, gatewayReq); err != nil {
+				slog.ErrorContext(ctx, "error create payment gateway", "error", err)
+			}
 		}
 	}
 
 	if err := s.deleteMessage(ctx, message); err != nil {
-		slog.ErrorContext(ctx, "error deleting message", "message_id", *message.MessageId, "error", err)
+		slog.ErrorContext(ctx, "error deleting message", "error", err)
 	}
 
-	s.Mutex.Unlock()
+	s.mutex.Unlock()
 }
 
 func (s *AwsSqsService) deleteMessage(ctx context.Context, message types.Message) error {
-	_, err := s.Client.DeleteMessage(ctx, &sqs.DeleteMessageInput{
-		QueueUrl:      &s.QueueUrl,
+	_, err := s.client.DeleteMessage(ctx, &sqs.DeleteMessageInput{
+		QueueUrl:      &s.queueUrl,
 		ReceiptHandle: message.ReceiptHandle,
 	})
 	if err != nil {

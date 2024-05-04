@@ -19,5 +19,11 @@ type GetPaymentsByOrderIDService[T any] interface {
 }
 
 type UpdatePaymentService[T any] interface {
-	Handle(ctx context.Context, id string, request T) (*payment_entity.Payment, error)
+	Handle(ctx context.Context, request T) (*payment_entity.Payment, error)
+}
+
+// ---
+
+type CreatePaymentGatewayService[T any] interface {
+	Handle(ctx context.Context, request T) error
 }
