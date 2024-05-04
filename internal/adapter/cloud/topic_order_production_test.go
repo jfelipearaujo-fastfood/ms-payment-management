@@ -16,7 +16,7 @@ import (
 func TestOrderProductionGetTopicName(t *testing.T) {
 	t.Run("Should return topic name", func(t *testing.T) {
 		// Arrange
-		service := NewUpdateOrderTopicService("test-topic", aws.Config{})
+		service := NewOrderProductionTopicService("test-topic", aws.Config{})
 
 		// Act
 		topicName := service.GetTopicName()
@@ -44,7 +44,7 @@ func TestOrderProductionUpdateTopicArn(t *testing.T) {
 			},
 		})
 
-		service := NewUpdateOrderTopicService("test-topic", *stubber.SdkConfig)
+		service := NewOrderProductionTopicService("test-topic", *stubber.SdkConfig)
 
 		// Act
 		err := service.UpdateTopicArn(ctx)
@@ -71,7 +71,7 @@ func TestOrderProductionUpdateTopicArn(t *testing.T) {
 			},
 		})
 
-		service := NewUpdateOrderTopicService("test-topic", *stubber.SdkConfig)
+		service := NewOrderProductionTopicService("test-topic", *stubber.SdkConfig)
 
 		// Act
 		err := service.UpdateTopicArn(ctx)
@@ -93,7 +93,7 @@ func TestOrderProductionUpdateTopicArn(t *testing.T) {
 			Error:         raiseErr,
 		})
 
-		service := NewUpdateOrderTopicService("test-topic", *stubber.SdkConfig)
+		service := NewOrderProductionTopicService("test-topic", *stubber.SdkConfig)
 
 		// Act
 		err := service.UpdateTopicArn(ctx)
@@ -133,7 +133,7 @@ func TestOrderProductionPublishMessage(t *testing.T) {
 			},
 		})
 
-		service := NewUpdateOrderTopicService("test-topic", *stubber.SdkConfig)
+		service := NewOrderProductionTopicService("test-topic", *stubber.SdkConfig)
 
 		err := service.UpdateTopicArn(ctx)
 		assert.NoError(t, err)
@@ -177,7 +177,7 @@ func TestOrderProductionPublishMessage(t *testing.T) {
 			Error: raiseErr,
 		})
 
-		service := NewUpdateOrderTopicService("test-topic", *stubber.SdkConfig)
+		service := NewOrderProductionTopicService("test-topic", *stubber.SdkConfig)
 
 		err := service.UpdateTopicArn(ctx)
 		assert.NoError(t, err)
