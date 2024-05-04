@@ -6,7 +6,7 @@ import (
 )
 
 type UpdatePaymentDTO struct {
-	PaymentId string `json:"payment_id" validate:"required,uuid4"`
+	PaymentId string `param:"payment_id" json:"payment_id" validate:"required,uuid4"`
 	Approved  bool   `json:"approved"`
 }
 

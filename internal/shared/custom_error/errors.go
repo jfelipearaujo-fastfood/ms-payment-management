@@ -22,4 +22,5 @@ var (
 	ErrPaymentNotFound               BusinessError = New(http.StatusNotFound, "unable to find the payment", "payment not found")
 	ErrPaymentInvalidStateTransition BusinessError = New(http.StatusBadRequest, "unable to update payment state", "invalid state transition")
 	ErrPaymentAlreadyExists          BusinessError = New(http.StatusConflict, "unable to create the payment", "payment already exists")
+	ErrPaymentAlreadyInState         BusinessError = New(http.StatusBadRequest, "unable to update payment state", "payment is already approved or rejected")
 )

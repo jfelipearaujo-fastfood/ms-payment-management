@@ -6,6 +6,7 @@ import (
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/entity/payment_entity"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/provider"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/repository"
+	"github.com/jfelipearaujo-org/ms-payment-management/internal/shared/custom_error"
 )
 
 type Service struct {
@@ -31,6 +32,15 @@ func (s *Service) Handle(ctx context.Context, request UpdatePaymentDTO) (*paymen
 	payment, err := s.repository.GetByID(ctx, request.PaymentId)
 	if err != nil {
 		return nil, err
+	}
+
+	validStates := []payment_entity.PaymentState{
+		payment_entity.Approved,
+		payment_entity.Rejected,
+	}
+
+	if payment.IsInState(validStates...) {
+		return nil, custom_error.ErrPaymentAlreadyInState
 	}
 
 	var state payment_entity.PaymentState
