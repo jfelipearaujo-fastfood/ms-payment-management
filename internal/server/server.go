@@ -29,6 +29,9 @@ type Server struct {
 	DatabaseService database.DatabaseService
 	QueueService    cloud.QueueService
 
+	UpdateOrderTopicService     cloud.TopicService
+	OrderProductionTopicService cloud.TopicService
+
 	Dependency Dependency
 }
 
@@ -60,6 +63,9 @@ func NewServer(config *environment.Config) *Server {
 			createPaymentService,
 			createPaymentGatewayService,
 		),
+
+		UpdateOrderTopicService:     cloud.NewUpdateOrderTopicService(config.CloudConfig.UpdateOrderTopic, cloudConfig),
+		OrderProductionTopicService: cloud.NewOrderProductionTopicService(config.CloudConfig.OrderProductionTopic, cloudConfig),
 
 		Dependency: Dependency{
 			TimeProvider:         timeProvider,

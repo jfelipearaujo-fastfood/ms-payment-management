@@ -40,7 +40,7 @@ func main() {
 	}
 
 	if err != nil {
-		slog.Error("error loading environment", "error", err)
+		slog.ErrorContext(ctx, "error loading environment", "error", err)
 		panic(err)
 	}
 
@@ -49,7 +49,17 @@ func main() {
 	server := server.NewServer(config)
 
 	if err := server.QueueService.UpdateQueueUrl(ctx); err != nil {
-		slog.Error("error updating queue url", "error", err)
+		slog.ErrorContext(ctx, "error updating queue url", "error", err)
+		panic(err)
+	}
+
+	if err := server.UpdateOrderTopicService.UpdateTopicArn(ctx); err != nil {
+		slog.ErrorContext(ctx, "error updating update order topic url", "error", err)
+		panic(err)
+	}
+
+	if err := server.OrderProductionTopicService.UpdateTopicArn(ctx); err != nil {
+		slog.ErrorContext(ctx, "error updating order production topic url", "error", err)
 		panic(err)
 	}
 
@@ -61,14 +71,14 @@ func main() {
 
 	httpServer := server.GetHttpServer()
 
-	go func() {
+	go func(ctx context.Context) {
 		slog.Info("🚀 Server started", "address", httpServer.Addr)
 		if err := httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("http server error", "error", err)
+			slog.ErrorContext(ctx, "http server error", "error", err)
 			panic(err)
 		}
 		slog.Info("http server stopped serving requests")
-	}()
+	}(ctx)
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -78,7 +88,7 @@ func main() {
 	defer shutdown()
 
 	if err := httpServer.Shutdown(ctx); err != nil {
-		slog.Error("error while trying to shutdown the server", "error", err)
+		slog.ErrorContext(ctx, "error while trying to shutdown the server", "error", err)
 	}
 	slog.Info("graceful shutdown completed ✅")
 }
