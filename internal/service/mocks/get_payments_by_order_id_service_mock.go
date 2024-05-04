@@ -14,9 +14,9 @@ type MockGetPaymentsByOrderIDService[T interface{}] struct {
 	mock.Mock
 }
 
-// Handle provides a mock function with given fields: ctx, orderId
-func (_m *MockGetPaymentsByOrderIDService[T]) Handle(ctx context.Context, orderId string) ([]payment_entity.Payment, error) {
-	ret := _m.Called(ctx, orderId)
+// Handle provides a mock function with given fields: ctx, request
+func (_m *MockGetPaymentsByOrderIDService[T]) Handle(ctx context.Context, request T) ([]payment_entity.Payment, error) {
+	ret := _m.Called(ctx, request)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Handle")
@@ -24,19 +24,19 @@ func (_m *MockGetPaymentsByOrderIDService[T]) Handle(ctx context.Context, orderI
 
 	var r0 []payment_entity.Payment
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) ([]payment_entity.Payment, error)); ok {
-		return rf(ctx, orderId)
+	if rf, ok := ret.Get(0).(func(context.Context, T) ([]payment_entity.Payment, error)); ok {
+		return rf(ctx, request)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string) []payment_entity.Payment); ok {
-		r0 = rf(ctx, orderId)
+	if rf, ok := ret.Get(0).(func(context.Context, T) []payment_entity.Payment); ok {
+		r0 = rf(ctx, request)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]payment_entity.Payment)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, orderId)
+	if rf, ok := ret.Get(1).(func(context.Context, T) error); ok {
+		r1 = rf(ctx, request)
 	} else {
 		r1 = ret.Error(1)
 	}

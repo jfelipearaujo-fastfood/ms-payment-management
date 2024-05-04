@@ -28,3 +28,10 @@ packages:
           mockname: "Mock{{.InterfaceName}}"
           outpkg: "mocks"
           include-regex: "(Service)"
+    github.com/jfelipearaujo-org/ms-payment-management/internal/adapter/cloud:
+        config:
+          filename: "{{ .InterfaceName | snakecase }}_mock.go"
+          dir: "./internal/adapter/cloud/mocks"
+          mockname: "Mock{{.InterfaceName}}"
+          outpkg: "mocks"
+          include-regex: "(Service)"

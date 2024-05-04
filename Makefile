@@ -15,14 +15,14 @@ build-docker: ## Build a container image and add the version and latest tag
 		docker-buildx build -t jose.araujo/api-transactions:latest -t jose.araujo/api-transactions:$$(git rev-parse --short HEAD) .; \
 	else \
 		read -p "Docker Buildx is not installed on your machine. Do you want to install it? [Y/n] " choice; \
-	    if [ "$$choice" != "n" ] && [ "$$choice" != "N" ]; then \
-	        brew install docker-buildx; \
-	        echo "Building..."; \
+		if [ "$$choice" != "n" ] && [ "$$choice" != "N" ]; then \
+			brew install docker-buildx; \
+			echo "Building..."; \
 			docker-buildx build -t jose.araujo/api-transactions:latest -t jose.araujo/api-transactions:$$(git rev-parse --short HEAD) .; \
-	    else \
-	        echo "You chose not to install Docker Buildx. Exiting..."; \
-	        exit 1; \
-	    fi; \
+		else \
+			echo "You chose not to install Docker Buildx. Exiting..."; \
+			exit 1; \
+		fi; \
 	fi
 
 clean: ## Clean the binary
@@ -71,7 +71,7 @@ run: build docker-up ## Run the application
 ##@ Testing
 test-queue: ## Test the queue
 	@echo "Testing..."
-	@./scripts/tests/send-message.sh
+	@./scripts/cloud/send-message.sh
 
 test: ## Test the application
 	@if command -v gcc > /dev/null; then \
@@ -143,18 +143,18 @@ docker-down: ## Shutdown containers
 
 watch: env docker-up ## Live reload using air
 	@if command -v air > /dev/null; then \
-	    air; \
-	    echo "Watching...";\
+		air; \
+		echo "Watching...";\
 	else \
-	    read -p "Go's 'air' is not installed on your machine. Do you want to install it? [Y/n] " choice; \
-	    if [ "$$choice" != "n" ] && [ "$$choice" != "N" ]; then \
-	        go install github.com/cosmtrek/air@latest; \
-	        air; \
-	        echo "Watching...";\
-	    else \
-	        echo "You chose not to install air. Exiting..."; \
-	        exit 1; \
-	    fi; \
+		read -p "Go's 'air' is not installed on your machine. Do you want to install it? [Y/n] " choice; \
+		if [ "$$choice" != "n" ] && [ "$$choice" != "N" ]; then \
+			go install github.com/cosmtrek/air@latest; \
+			air; \
+			echo "Watching...";\
+		else \
+			echo "You chose not to install air. Exiting..."; \
+			exit 1; \
+		fi; \
 	fi
 
 ##@ Auto generated files
