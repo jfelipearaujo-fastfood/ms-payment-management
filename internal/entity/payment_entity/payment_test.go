@@ -77,3 +77,29 @@ func TestUpdateState(t *testing.T) {
 		assert.Equal(t, now, payment.UpdatedAt)
 	})
 }
+
+func TestExists(t *testing.T) {
+	t.Run("Should return true if the payment exists", func(t *testing.T) {
+		// Arrange
+		payment := NewPayment("order_id", "payment_id", 1, 1.23, time.Now())
+
+		// Act
+		res := payment.Exists()
+
+		// Assert
+		assert.True(t, res)
+	})
+
+	t.Run("Should return false if the payment does not exist", func(t *testing.T) {
+		// Arrange
+		payment := NewPayment("order_id", "payment_id", 1, 1.23, time.Now())
+		payment.OrderId = ""
+		payment.PaymentId = ""
+
+		// Act
+		res := payment.Exists()
+
+		// Assert
+		assert.False(t, res)
+	})
+}

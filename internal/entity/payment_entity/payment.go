@@ -49,3 +49,7 @@ func (p *Payment) UpdateState(newState PaymentState, now time.Time) {
 
 	p.UpdatedAt = now
 }
+
+func (p *Payment) Exists() bool {
+	return p.OrderId != "" && p.PaymentId != ""
+}
