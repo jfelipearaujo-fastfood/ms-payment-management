@@ -5,9 +5,17 @@ import (
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/shared/custom_error"
 )
 
+type CreatePaymentItemDTO struct {
+	Id       string `json:"id" validate:"required,uuid4"`
+	Name     string `json:"name" validate:"required"`
+	Quantity int    `json:"quantity" validate:"required,gte=1"`
+}
+
 type CreatePaymentDTO struct {
 	OrderId   string `json:"order_id" validate:"required,uuid4"`
 	PaymentId string `json:"payment_id" validate:"required,uuid4"`
+
+	Items []CreatePaymentItemDTO `json:"items" validate:"required,dive"`
 
 	TotalItems int     `json:"total_items" validate:"required,gte=1"`
 	Amount     float64 `json:"amount" validate:"required,gt=0"`

@@ -20,6 +20,11 @@ func NewPaymentRepository(conn *sql.DB) *PaymentRepository {
 }
 
 func (r *PaymentRepository) Create(ctx context.Context, payment *payment_entity.Payment) error {
+	tx, err := r.conn.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
 	sql, params, err := goqu.
 		Insert("payments").
 		Cols("order_id", "payment_id", "total_items", "amount", "state", "created_at", "updated_at").
@@ -39,12 +44,36 @@ func (r *PaymentRepository) Create(ctx context.Context, payment *payment_entity.
 		return err
 	}
 
-	_, err = r.conn.ExecContext(ctx, sql, params...)
+	_, err = tx.ExecContext(ctx, sql, params...)
 	if err != nil {
-		return err
+		return tx.Rollback()
 	}
 
-	return nil
+	for _, item := range payment.Items {
+		sql, params, err := goqu.
+			Insert("payment_items").
+			Cols("id", "order_id", "payment_id", "name", "quantity").
+			Vals(
+				goqu.Vals{
+					item.Id,
+					payment.OrderId,
+					payment.PaymentId,
+					item.Name,
+					item.Quantity,
+				},
+			).
+			ToSQL()
+		if err != nil {
+			return tx.Rollback()
+		}
+
+		_, err = tx.ExecContext(ctx, sql, params...)
+		if err != nil {
+			return tx.Rollback()
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (r *PaymentRepository) GetByID(ctx context.Context, paymentId string) (payment_entity.Payment, error) {
@@ -82,6 +111,38 @@ func (r *PaymentRepository) GetByID(ctx context.Context, paymentId string) (paym
 
 	if payment.OrderId == "" {
 		return payment_entity.Payment{}, custom_error.ErrPaymentNotFound
+	}
+
+	sql, params, err = goqu.
+		From("payment_items").
+		Select("id", "name", "quantity").
+		Where(goqu.C("payment_id").Eq(paymentId)).
+		ToSQL()
+	if err != nil {
+		return payment_entity.Payment{}, err
+	}
+
+	statement, err = r.conn.QueryContext(ctx, sql, params...)
+	if err != nil {
+		return payment_entity.Payment{}, err
+	}
+	defer statement.Close()
+
+	payment.Items = make([]payment_entity.PaymentItem, 0)
+
+	for statement.Next() {
+		var item payment_entity.PaymentItem
+
+		err = statement.Scan(
+			&item.Id,
+			&item.Name,
+			&item.Quantity,
+		)
+		if err != nil {
+			return payment_entity.Payment{}, err
+		}
+
+		payment.Items = append(payment.Items, item)
 	}
 
 	return payment, nil

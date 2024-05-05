@@ -54,6 +54,9 @@ func NewServer(config *environment.Config) *Server {
 	createPaymentService := create.NewService(paymentRepository, timeProvider)
 	createPaymentGatewayService := gateway.NewService()
 
+	updateOrderTopicService := cloud.NewUpdateOrderTopicService(config.CloudConfig.UpdateOrderTopic, cloudConfig)
+	orderProductionTopicService := cloud.NewOrderProductionTopicService(config.CloudConfig.OrderProductionTopic, cloudConfig)
+
 	return &Server{
 		Config:          config,
 		DatabaseService: databaseService,
@@ -64,14 +67,19 @@ func NewServer(config *environment.Config) *Server {
 			createPaymentGatewayService,
 		),
 
-		UpdateOrderTopicService:     cloud.NewUpdateOrderTopicService(config.CloudConfig.UpdateOrderTopic, cloudConfig),
-		OrderProductionTopicService: cloud.NewOrderProductionTopicService(config.CloudConfig.OrderProductionTopic, cloudConfig),
+		UpdateOrderTopicService:     updateOrderTopicService,
+		OrderProductionTopicService: orderProductionTopicService,
 
 		Dependency: Dependency{
-			TimeProvider:         timeProvider,
-			PaymentRepository:    paymentRepository,
+			TimeProvider: timeProvider,
+
+			PaymentRepository: paymentRepository,
+
 			CreatePaymentService: createPaymentService,
 			UpdatePaymentService: update.NewService(paymentRepository, timeProvider),
+
+			UpdateOrderTopicService:     updateOrderTopicService,
+			OrderProductionTopicService: orderProductionTopicService,
 		},
 	}
 }
@@ -107,7 +115,11 @@ func (server *Server) registerHealthCheck(e *echo.Echo) {
 }
 
 func (s *Server) registerOrderHandlers(e *echo.Group) {
-	updatePaymentHandler := payment_hook.NewHandler(s.Dependency.UpdatePaymentService)
+	updatePaymentHandler := payment_hook.NewHandler(
+		s.Dependency.UpdatePaymentService,
+		s.Dependency.OrderProductionTopicService,
+		s.Dependency.UpdateOrderTopicService,
+	)
 
 	e.PATCH("/payments/webhook/:payment_id", updatePaymentHandler.Handle)
 }

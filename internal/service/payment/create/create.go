@@ -38,8 +38,14 @@ func (s *Service) Handle(ctx context.Context, request CreatePaymentDTO) (*paymen
 		return nil, custom_error.ErrPaymentAlreadyExists
 	}
 
+	items := make([]payment_entity.PaymentItem, len(request.Items))
+	for i, item := range request.Items {
+		items[i] = payment_entity.NewPaymentItem(item.Id, item.Name, item.Quantity)
+	}
+
 	payment := payment_entity.NewPayment(request.OrderId,
 		request.PaymentId,
+		items,
 		request.TotalItems,
 		request.Amount,
 		s.timeProvider.GetTime(),

@@ -15,6 +15,14 @@ if [ $? -eq 0 ]; then
     message='{
         "order_id": "c3fdab1b-3c06-4db2-9edc-4760a2429460",
         "payment_id": "9dfa1386-2f52-4cca-b9aa-f9bd6887d442",
+        "items": [
+            {
+                "id": "cfdab175-1f86-4fb0-9bcb-15f2c58df30c",
+                "name": "Hamburger",
+                "description": "A delicious hamburger",
+                "quantity": 1
+            }
+        ],
         "total_items": 1,
         "amount": 100.0
     }'

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/google/uuid"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/entity/payment_entity"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,13 +20,24 @@ func TestCreate(t *testing.T) {
 
 		ctx := context.Background()
 
+		mock.ExpectBegin()
+
 		mock.ExpectExec("INSERT INTO (.+)?payments(.+)?").
 			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		mock.ExpectExec("INSERT INTO (.+)?payment_items(.+)?").
+			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		mock.ExpectCommit()
 
 		repo := NewPaymentRepository(db)
 
 		// Act
-		err = repo.Create(ctx, &payment_entity.Payment{})
+		err = repo.Create(ctx, &payment_entity.Payment{
+			Items: []payment_entity.PaymentItem{
+				payment_entity.NewPaymentItem(uuid.NewString(), "item", 1),
+			},
+		})
 
 		// Assert
 		assert.NoError(t, err)
@@ -39,8 +51,12 @@ func TestCreate(t *testing.T) {
 
 		ctx := context.Background()
 
+		mock.ExpectBegin()
+
 		mock.ExpectExec("INSERT INTO (.+)?payments(.+)?").
 			WillReturnError(assert.AnError)
+
+		mock.ExpectRollback()
 
 		repo := NewPaymentRepository(db)
 
@@ -48,7 +64,38 @@ func TestCreate(t *testing.T) {
 		err = repo.Create(ctx, &payment_entity.Payment{})
 
 		// Assert
-		assert.Error(t, err)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Should rollback if an error occurs when inserting payment items", func(t *testing.T) {
+		// Arrange
+		db, mock, err := sqlmock.New()
+		assert.NoError(t, err)
+		defer db.Close()
+
+		ctx := context.Background()
+
+		mock.ExpectBegin()
+
+		mock.ExpectExec("INSERT INTO (.+)?payments(.+)?").
+			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		mock.ExpectExec("INSERT INTO (.+)?payment_items(.+)?").
+			WillReturnError(assert.AnError)
+
+		mock.ExpectRollback()
+
+		repo := NewPaymentRepository(db)
+
+		// Act
+		err = repo.Create(ctx, &payment_entity.Payment{
+			Items: []payment_entity.PaymentItem{
+				payment_entity.NewPaymentItem(uuid.NewString(), "item", 1),
+			},
+		})
+
+		// Assert
+		assert.NoError(t, err)
 	})
 }
 
@@ -63,9 +110,14 @@ func TestGetByID(t *testing.T) {
 
 		now := time.Now()
 
+		expectedPaymentItems := []payment_entity.PaymentItem{
+			payment_entity.NewPaymentItem(uuid.NewString(), "item", 1),
+		}
+
 		expectedPayment := payment_entity.Payment{
 			OrderId:    "order_id",
 			PaymentId:  "payment_id",
+			Items:      expectedPaymentItems,
 			TotalItems: 1,
 			Amount:     1.0,
 			State:      payment_entity.WaitingForApproval,
@@ -76,6 +128,10 @@ func TestGetByID(t *testing.T) {
 		mock.ExpectQuery("SELECT (.+)?payments(.+)?").
 			WillReturnRows(sqlmock.NewRows([]string{"order_id", "payment_id", "total_items", "amount", "state", "created_at", "updated_at"}).
 				AddRow(expectedPayment.OrderId, expectedPayment.PaymentId, expectedPayment.TotalItems, expectedPayment.Amount, expectedPayment.State, expectedPayment.CreatedAt, expectedPayment.UpdatedAt))
+
+		mock.ExpectQuery("SELECT (.+)?payment_items(.+)?").
+			WillReturnRows(sqlmock.NewRows([]string{"id", "name", "quantity"}).
+				AddRow(expectedPaymentItems[0].Id, expectedPaymentItems[0].Name, expectedPaymentItems[0].Quantity))
 
 		repo := NewPaymentRepository(db)
 
