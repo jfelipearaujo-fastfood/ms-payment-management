@@ -9,5 +9,5 @@ PATCH {{host}}/api/v1/payments/webhook/9dfa1386-2f52-4cca-b9aa-f9bd6887d442
 Content-Type: application/json
 
 {
-    "approved": false
+    "approved": true
 }

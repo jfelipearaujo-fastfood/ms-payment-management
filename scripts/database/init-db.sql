@@ -1,3 +1,6 @@
+DROP TABLE IF EXISTS payments;
+DROP TABLE IF EXISTS payment_items;
+
 CREATE TABLE IF NOT EXISTS payments (
     order_id varchar(255),
     payment_id varchar(255),
@@ -7,4 +10,13 @@ CREATE TABLE IF NOT EXISTS payments (
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
     PRIMARY KEY (order_id, payment_id)
+);
+
+CREATE TABLE IF NOT EXISTS payment_items (
+    id varchar(255),
+    order_id varchar(255),
+    payment_id varchar(255),
+    name varchar(255),
+    quantity int,
+    PRIMARY KEY (id)
 );

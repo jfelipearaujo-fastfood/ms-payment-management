@@ -6,6 +6,8 @@ type Payment struct {
 	OrderId   string `json:"order_id"`
 	PaymentId string `json:"payment_id"`
 
+	Items []PaymentItem `json:"items"`
+
 	TotalItems int          `json:"total_items"`
 	Amount     float64      `json:"amount"`
 	State      PaymentState `json:"state"`
@@ -15,10 +17,12 @@ type Payment struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func NewPayment(orderId, paymentId string, totalItems int, amount float64, now time.Time) Payment {
+func NewPayment(orderId string, paymentId string, items []PaymentItem, totalItems int, amount float64, now time.Time) Payment {
 	return Payment{
 		OrderId:   orderId,
 		PaymentId: paymentId,
+
+		Items: items,
 
 		TotalItems: totalItems,
 		Amount:     amount,

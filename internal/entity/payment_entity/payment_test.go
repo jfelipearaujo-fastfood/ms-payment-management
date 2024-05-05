@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +16,12 @@ func TestIsInState(t *testing.T) {
 		states := []PaymentState{WaitingForApproval, Approved, Rejected}
 
 		for _, state := range states {
-			payment := NewPayment("order_id", "payment_id", 1, 1.23, now)
+			items := []PaymentItem{
+				NewPaymentItem(uuid.NewString(), "item1", 1),
+				NewPaymentItem(uuid.NewString(), "item2", 1),
+			}
+
+			payment := NewPayment("order_id", "payment_id", items, 1, 1.23, now)
 			payment.State = state
 
 			// Act
@@ -33,7 +39,12 @@ func TestIsInState(t *testing.T) {
 		states := []PaymentState{WaitingForApproval, Approved, Rejected}
 
 		for _, state := range states {
-			payment := NewPayment("order_id", "payment_id", 1, 1.23, now)
+			items := []PaymentItem{
+				NewPaymentItem(uuid.NewString(), "item1", 1),
+				NewPaymentItem(uuid.NewString(), "item2", 1),
+			}
+
+			payment := NewPayment("order_id", "payment_id", items, 1, 1.23, now)
 			payment.State = state
 
 			// Act
@@ -50,7 +61,12 @@ func TestRefreshStateTitle(t *testing.T) {
 		// Arrange
 		now := time.Now()
 
-		payment := NewPayment("order_id", "payment_id", 1, 1.23, now)
+		items := []PaymentItem{
+			NewPaymentItem(uuid.NewString(), "item1", 1),
+			NewPaymentItem(uuid.NewString(), "item2", 1),
+		}
+
+		payment := NewPayment("order_id", "payment_id", items, 1, 1.23, now)
 		payment.State = Approved
 
 		// Act
@@ -66,7 +82,12 @@ func TestUpdateState(t *testing.T) {
 		// Arrange
 		now := time.Now()
 
-		payment := NewPayment("order_id", "payment_id", 1, 1.23, now)
+		items := []PaymentItem{
+			NewPaymentItem(uuid.NewString(), "item1", 1),
+			NewPaymentItem(uuid.NewString(), "item2", 1),
+		}
+
+		payment := NewPayment("order_id", "payment_id", items, 1, 1.23, now)
 
 		// Act
 		payment.UpdateState(Approved, now)
@@ -81,7 +102,12 @@ func TestUpdateState(t *testing.T) {
 func TestExists(t *testing.T) {
 	t.Run("Should return true if the payment exists", func(t *testing.T) {
 		// Arrange
-		payment := NewPayment("order_id", "payment_id", 1, 1.23, time.Now())
+		items := []PaymentItem{
+			NewPaymentItem(uuid.NewString(), "item1", 1),
+			NewPaymentItem(uuid.NewString(), "item2", 1),
+		}
+
+		payment := NewPayment("order_id", "payment_id", items, 1, 1.23, time.Now())
 
 		// Act
 		res := payment.Exists()
@@ -92,7 +118,12 @@ func TestExists(t *testing.T) {
 
 	t.Run("Should return false if the payment does not exist", func(t *testing.T) {
 		// Arrange
-		payment := NewPayment("order_id", "payment_id", 1, 1.23, time.Now())
+		items := []PaymentItem{
+			NewPaymentItem(uuid.NewString(), "item1", 1),
+			NewPaymentItem(uuid.NewString(), "item2", 1),
+		}
+
+		payment := NewPayment("order_id", "payment_id", items, 1, 1.23, time.Now())
 		payment.OrderId = ""
 		payment.PaymentId = ""
 

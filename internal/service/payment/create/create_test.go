@@ -38,8 +38,15 @@ func TestHandle(t *testing.T) {
 		service := NewService(repository, timeProvider)
 
 		req := CreatePaymentDTO{
-			OrderId:    uuid.NewString(),
-			PaymentId:  uuid.NewString(),
+			OrderId:   uuid.NewString(),
+			PaymentId: uuid.NewString(),
+			Items: []CreatePaymentItemDTO{
+				{
+					Id:       uuid.NewString(),
+					Name:     "item",
+					Quantity: 1,
+				},
+			},
 			TotalItems: 1,
 			Amount:     100,
 		}
@@ -64,8 +71,15 @@ func TestHandle(t *testing.T) {
 		service := NewService(repository, timeProvider)
 
 		req := CreatePaymentDTO{
-			OrderId:    uuid.NewString(),
-			PaymentId:  uuid.NewString(),
+			OrderId:   uuid.NewString(),
+			PaymentId: uuid.NewString(),
+			Items: []CreatePaymentItemDTO{
+				{
+					Id:       uuid.NewString(),
+					Name:     "item",
+					Quantity: 1,
+				},
+			},
 			TotalItems: -1,
 			Amount:     100,
 		}
@@ -104,8 +118,15 @@ func TestHandle(t *testing.T) {
 		service := NewService(repository, timeProvider)
 
 		req := CreatePaymentDTO{
-			OrderId:    uuid.NewString(),
-			PaymentId:  uuid.NewString(),
+			OrderId:   uuid.NewString(),
+			PaymentId: uuid.NewString(),
+			Items: []CreatePaymentItemDTO{
+				{
+					Id:       uuid.NewString(),
+					Name:     "item",
+					Quantity: 1,
+				},
+			},
 			TotalItems: 1,
 			Amount:     100,
 		}
@@ -137,8 +158,15 @@ func TestHandle(t *testing.T) {
 		service := NewService(repository, timeProvider)
 
 		req := CreatePaymentDTO{
-			OrderId:    uuid.NewString(),
-			PaymentId:  uuid.NewString(),
+			OrderId:   uuid.NewString(),
+			PaymentId: uuid.NewString(),
+			Items: []CreatePaymentItemDTO{
+				{
+					Id:       uuid.NewString(),
+					Name:     "item",
+					Quantity: 1,
+				},
+			},
 			TotalItems: 1,
 			Amount:     100,
 		}
@@ -167,8 +195,15 @@ func TestHandle(t *testing.T) {
 		service := NewService(repository, timeProvider)
 
 		req := CreatePaymentDTO{
-			OrderId:    uuid.NewString(),
-			PaymentId:  uuid.NewString(),
+			OrderId:   uuid.NewString(),
+			PaymentId: uuid.NewString(),
+			Items: []CreatePaymentItemDTO{
+				{
+					Id:       uuid.NewString(),
+					Name:     "item",
+					Quantity: 1,
+				},
+			},
 			TotalItems: 1,
 			Amount:     100,
 		}
