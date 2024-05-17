@@ -4,32 +4,31 @@
 help:  ## Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-prepare-and-push: ## Run validations and push to the registry
-	@make lint
-	@make sec
-	@make test
-	@git push
-
 ##@ CI/CD
 build: ## Build the application to the output folder (default: ./buil/main)
 	@echo "Building..."	
-	@go build -ldflags="-s -w" -o build/main cmd/api/main.go
+	@go build -race -o build/main cmd/api/main.go
 
-build-docker: ## Build a container image and add the version and latest tag
-	@if command -v docker > /dev/null 2>&1 && docker-buildx version > /dev/null 2>&1; then \
+docker-build: ## Build a container image and add the version and latest tag
+	@if command -v docker > /dev/null; then \
 		echo "Building..."; \
-		docker-buildx build -t jose.araujo/api-transactions:latest -t jose.araujo/api-transactions:$$(git rev-parse --short HEAD) .; \
+		docker buildx build -t jsfelipearaujo/ms-payment-management:latest -t jsfelipearaujo/ms-payment-management:$$(git rev-parse --short HEAD) .; \
 	else \
 		read -p "Docker Buildx is not installed on your machine. Do you want to install it? [Y/n] " choice; \
 		if [ "$$choice" != "n" ] && [ "$$choice" != "N" ]; then \
 			brew install docker-buildx; \
 			echo "Building..."; \
-			docker-buildx build -t jose.araujo/api-transactions:latest -t jose.araujo/api-transactions:$$(git rev-parse --short HEAD) .; \
+			docker buildx build -t jsfelipearaujo/ms-payment-management:latest -t jsfelipearaujo/ms-payment-management:$$(git rev-parse --short HEAD) .; \
 		else \
 			echo "You chose not to install Docker Buildx. Exiting..."; \
 			exit 1; \
 		fi; \
 	fi
+
+docker-push: ## Push the container image to the registry
+	echo "Pushing..."; \
+	docker push jsfelipearaujo/ms-payment-management:latest && \
+	docker push jsfelipearaujo/ms-payment-management:$$(git rev-parse --short HEAD)
 
 clean: ## Clean the binary
 	@echo "Cleaning..."
@@ -51,6 +50,84 @@ sec: ## Security checker
 		fi; \
 	fi
 
+k8s-attach: ## Attach to the application running in Kubernetes
+	aws eks update-kubeconfig --name fastfood --region us-east-1
+
+k8s-copy-config: ## Copy the application configuration to Kubernetes
+	cat /home/jfelipearaujo/.kube/config > k8s/kubeconfig
+
+k8s-deploy: ## Deploy the application to Kubernetes
+	@if [ "$(id)" != "" ]; then \
+		echo "Generating sensitive data..."; \
+		cat k8s/service-account.yaml | sed "s/{{AWS_ACCOUNT_ID}}/$(id)/g" > k8s/service-account-sensitive.yaml; \
+		echo "Deploying..."; \
+		kubectl apply -f k8s/namespace.yaml; \
+		kubectl apply -f k8s/configmap.yaml; \
+		kubectl apply -f k8s/service-account-sensitive.yaml; \
+		kubectl apply -f k8s/secret.yaml; \
+		kubectl apply -f k8s/deployment.yaml; \
+		kubectl apply -f k8s/service.yaml; \
+		kubectl apply -f k8s/hpa.yaml; \
+		kubectl apply -f k8s/ingres.yaml; \
+		rm k8s/service-account-sensitive.yaml; \
+		echo "Deployed!"; \
+	else \
+		read -p "please, inform the AWS Account ID to be used: " id; \
+		if [ "$$id" != "" ]; then \
+			echo "Generating sensitive data..."; \
+			cat k8s/service-account.yaml | sed "s/{{AWS_ACCOUNT_ID}}/$$id/g" > k8s/service-account-sensitive.yaml; \
+			echo "Deploying..."; \
+			kubectl apply -f k8s/namespace.yaml; \
+			kubectl apply -f k8s/configmap.yaml; \
+			kubectl apply -f k8s/service-account-sensitive.yaml; \
+			kubectl apply -f k8s/secret.yaml; \
+			kubectl apply -f k8s/deployment.yaml; \
+			kubectl apply -f k8s/service.yaml; \
+			kubectl apply -f k8s/hpa.yaml; \
+			kubectl apply -f k8s/ingres.yaml; \
+			rm k8s/service-account-sensitive.yaml; \
+			echo "Deployed!"; \
+		else \
+			echo "You must inform the AWS Account ID to be used. Exiting..."; \
+			exit 1; \
+		fi; \
+	fi
+
+k8s-destroy: ## Destroy the application from Kubernetes
+	@if [ "$(id)" != "" ]; then \
+		echo "Destroying..."; \
+		kubectl delete -f k8s/ingres.yaml; \
+		kubectl delete -f k8s/hpa.yaml; \
+		kubectl delete -f k8s/service.yaml; \
+		kubectl delete -f k8s/deployment.yaml; \
+		kubectl delete -f k8s/secret.yaml; \
+		kubectl delete -f k8s/service-account-sensitive.yaml; \
+		kubectl delete -f k8s/configmap.yaml; \
+		kubectl delete -f k8s/namespace.yaml; \
+		rm k8s/service-account-sensitive.yaml; \
+		echo "Destroyed!"; \
+	else \
+		read -p "please, inform the AWS Account ID to be used: " id; \
+		if [ "$$id" != "" ]; then \
+			echo "Generating sensitive data..."; \
+			cat k8s/service-account.yaml | sed "s/{{AWS_ACCOUNT_ID}}/$$id/g" > k8s/service-account-sensitive.yaml; \
+			echo "Destroying..."; \
+			kubectl delete -f k8s/ingres.yaml; \
+			kubectl delete -f k8s/hpa.yaml; \
+			kubectl delete -f k8s/service.yaml; \
+			kubectl delete -f k8s/deployment.yaml; \
+			kubectl delete -f k8s/secret.yaml; \
+			kubectl delete -f k8s/service-account-sensitive.yaml; \
+			kubectl delete -f k8s/configmap.yaml; \
+			kubectl delete -f k8s/namespace.yaml; \
+			rm k8s/service-account-sensitive.yaml; \
+			echo "Destroyed!"; \
+		else \
+			echo "You must inform the AWS Account ID to be used. Exiting..."; \
+			exit 1; \
+		fi; \
+	fi
+
 lint: ## Go Linter
 	@if command -v golangci-lint > /dev/null; then \
 		echo "Analyzing..."; \
@@ -68,36 +145,21 @@ lint: ## Go Linter
 	fi
 
 ##@ Runner
-run: build docker-up ## Run the application
+run: ## Run the application
+	make build
 	@if test ! -f .env; then \
 		make env; \
-	fi; \
-	go run -race -ldflags="-s -w" cmd/api/main.go local
+	fi
+	@./build/main;
 
 ##@ Testing
-test-queue: ## Test the queue
-	@echo "Testing..."
-	@./scripts/cloud/send-message.sh
-
 test: ## Test the application
-	@if command -v gcc > /dev/null; then \
-		echo "Testing..."; \
-		go test -race -ldflags="-s -w" -count=1 ./internal/... -coverprofile=coverage.out; \
-	else \
-		read -p "gcc is not installed on your machine. Do you want to install it? [Y/n] " choice; \
-		if [ "$$choice" != "n" ] && [ "$$choice" != "N" ]; then \
-			sudo apt install build-essential; \
-			echo "Testing..."; \
-			go test -race -ldflags="-s -w" -count=1 ./internal/... -coverprofile=coverage.out; \
-		else \
-			echo "You chose not to intall gcc. Exiting..."; \
-			exit 1; \
-		fi; \
-	fi
+	@echo "Testing..."
+	@go test -race -count=1 ./internal/... -coverprofile=coverage.out
 
 test-bdd: ## Run BDD tests
 	@echo "Running BDD tests..."
-	@go test -race -count=1 ./tests/... -test.v -test.run ^TestFeatures$
+	@go test -count=1 ./tests/... -test.v -test.run ^TestFeatures$
 
 cover: ## View the coverage
 	@echo "Analyzing coverage..."
@@ -147,7 +209,11 @@ docker-down: ## Shutdown containers
 		docker-compose down; \
 	fi
 
-watch: env docker-up ## Live reload using air
+watch: ## Live reload using air
+	@if test ! -f .env; then \
+		make env; \
+	fi
+
 	@if command -v air > /dev/null; then \
 		air; \
 		echo "Watching...";\
@@ -162,6 +228,31 @@ watch: env docker-up ## Live reload using air
 			exit 1; \
 		fi; \
 	fi
+
+tag: ## Create or bump the version tag
+	@if [ -z "$(TAG)" ]; then \
+        echo "No previous version found. Creating v1.0 tag..."; \
+        git tag v1.0; \
+    else \
+        echo "Previous version found: $(VERSION)"; \
+        read -p "Bump major version (M/m) or release version (R/r)? " choice; \
+        if [ "$$choice" = "M" ] || [ "$$choice" = "m" ]; then \
+            echo "Bumping major version..."; \
+			major=$$(echo $(VERSION) | cut -d'.' -f1); \
+            major=$$(expr $$major + 1); \
+            new_version=$$major.0; \
+        elif [ "$$choice" = "R" ] || [ "$$choice" = "r" ]; then \
+            echo "Bumping release version..."; \
+			release=$$(echo $(VERSION) | cut -d'.' -f2); \
+            release=$$(expr $$release + 1); \
+            new_version=$$(echo $(VERSION) | cut -d'.' -f1).$$release; \
+        else \
+            echo "Invalid choice. Aborting."; \
+            exit 1; \
+        fi; \
+        echo "Creating tag for version v$$new_version..."; \
+        git tag v$$new_version; \
+    fi
 
 ##@ Auto generated files
 gen-mocks: ## Gen mock files using mockery

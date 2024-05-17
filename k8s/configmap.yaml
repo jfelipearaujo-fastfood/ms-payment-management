@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ms-payment-management-config
+  namespace: ns-payments
+  labels:
+    app: ms-payment-management
+data:
+  API_PORT: "8080"
+  API_ENV_NAME: production
+  API_VERSION: v1
+  DB_NAME: products
+  AWS_ORDER_PRODUCTION_TOPIC_NAME: OrderProductionTopic
+  AWS_UPDATE_ORDER_TOPIC_NAME: UpdateOrderTopic
+  AWS_ORDER_PAYMENT_QUEUE_NAME: OrderPaymentQueue
