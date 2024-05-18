@@ -13,13 +13,24 @@ spec:
       labels:
         app: ms-payment-management
     spec:
-      serviceAccountName: sa-products
+      serviceAccountName: sa-payments
       containers:
         - name: ms-payment-management
           image: jsfelipearaujo/ms-payment-management:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 8080
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 4
+            successThreshold: 1
           resources:
             limits:
               memory: 200Mi
