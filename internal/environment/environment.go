@@ -15,7 +15,8 @@ func (c *ApiConfig) IsDevelopment() bool {
 }
 
 type DatabaseConfig struct {
-	Url string `env:"URL, required"`
+	Url           string `env:"URL, required"`
+	UrlSecretName string `env:"URL_SECRET_NAME, required"`
 }
 
 type CloudConfig struct {

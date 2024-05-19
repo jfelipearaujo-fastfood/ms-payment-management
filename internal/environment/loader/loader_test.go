@@ -16,6 +16,7 @@ func cleanEnv() {
 		"API_ENV_NAME",
 		"API_VERSION",
 		"DB_URL",
+		"DB_URL_SECRET_NAME",
 		"AWS_BASE_ENDPOINT",
 		"AWS_ORDER_PRODUCTION_TOPIC_NAME",
 		"AWS_UPDATE_ORDER_TOPIC_NAME",
@@ -38,6 +39,7 @@ func TestGetEnvironment(t *testing.T) {
 			{"API_ENV_NAME", "development"},
 			{"API_VERSION", "v1"},
 			{"DB_URL", "db://host:1234"},
+			{"DB_URL_SECRET_NAME", "db-secret-url"},
 			{"AWS_BASE_ENDPOINT", "http://localhost:4566"},
 			{"AWS_ORDER_PRODUCTION_TOPIC_NAME", "order_payment"},
 			{"AWS_UPDATE_ORDER_TOPIC_NAME", "update_order"},
@@ -55,7 +57,8 @@ func TestGetEnvironment(t *testing.T) {
 				ApiVersion: "v1",
 			},
 			DbConfig: &environment.DatabaseConfig{
-				Url: "db://host:1234",
+				Url:           "db://host:1234",
+				UrlSecretName: "db-secret-url",
 			},
 			CloudConfig: &environment.CloudConfig{
 				OrderProductionTopic: "order_payment",
@@ -114,7 +117,8 @@ func TestGetEnvironmentFromFile(t *testing.T) {
 				ApiVersion: "v1",
 			},
 			DbConfig: &environment.DatabaseConfig{
-				Url: "db://host:1234",
+				Url:           "db://host:1234",
+				UrlSecretName: "db-secret-url",
 			},
 			CloudConfig: &environment.CloudConfig{
 				OrderProductionTopic: "order_payment",

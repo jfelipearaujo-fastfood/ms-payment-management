@@ -10,6 +10,7 @@ data:
   API_ENV_NAME: production
   API_VERSION: v1
   DB_NAME: products
+  DB_URL_SECRET_NAME: db-payments-url-secret
   AWS_ORDER_PRODUCTION_TOPIC_NAME: OrderProductionTopic
   AWS_UPDATE_ORDER_TOPIC_NAME: UpdateOrderTopic
   AWS_ORDER_PAYMENT_QUEUE_NAME: OrderPaymentQueue

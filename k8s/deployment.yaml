@@ -8,6 +8,11 @@ spec:
   selector:
     matchLabels:
       app: ms-payment-management
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
@@ -41,20 +46,23 @@ spec:
           envFrom:
             - configMapRef:
                 name: ms-payment-management-config
-          env:
-            - name: DB_URL
-              valueFrom:
-                secretKeyRef:
-                  name: database-url
-                  key: url
-          volumeMounts:
-            - name: secrets-store-inline
-              mountPath: "/mnt/secrets-store"
-              readOnly: true
-      volumes:
-        - name: secrets-store-inline
-          csi:
-            driver: secrets-store.csi.k8s.io
-            readOnly: true
-            volumeAttributes:
-              secretProviderClass: "aws-secrets"
+          # env:
+          #   - name: DB_URL
+          #     valueFrom:
+          #       secretKeyRef:
+          #         name: database-url
+          #         key: url
+          # volumeMounts:
+          #   - name: secrets-store-inline
+          #     mountPath: "/mnt/secrets-store"
+          #     readOnly: true
+      terminationGracePeriodSeconds: 30
+      nodeSelector: {}
+      tolerations: []
+      # volumes:
+      #   - name: secrets-store-inline
+      #     csi:
+      #       driver: secrets-store.csi.k8s.io
+      #       readOnly: true
+      #       volumeAttributes:
+      #         secretProviderClass: "aws-secrets"
