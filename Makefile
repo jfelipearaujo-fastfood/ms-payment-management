@@ -153,6 +153,10 @@ run: ## Run the application
 	@./build/main;
 
 ##@ Testing
+test-queue: ## Test the queue
+	@echo "Testing..."
+	@./scripts/cloud/send-message.sh
+	
 test: ## Test the application
 	@echo "Testing..."
 	@go test -race -count=1 ./internal/... -coverprofile=coverage.out

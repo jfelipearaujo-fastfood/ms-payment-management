@@ -105,9 +105,21 @@ func (s *AwsSqsService) processMessage(ctx context.Context, message types.Messag
 
 	slog.InfoContext(ctx, "message received")
 
+	var notification TopicNotification
+
+	err := json.Unmarshal([]byte(*message.Body), &notification)
+	if err != nil {
+		slog.ErrorContext(ctx, "error unmarshalling message", "error", err)
+	}
+
+	if notification.Type != "Notification" {
+		slog.ErrorContext(ctx, "invalid notification type", "type", notification.Type)
+		return
+	}
+
 	var request create.CreatePaymentDTO
 
-	err := json.Unmarshal([]byte(*message.Body), &request)
+	err = json.Unmarshal([]byte(notification.Message), &request)
 	if err != nil {
 		slog.ErrorContext(ctx, "error unmarshalling message", "error", err)
 	}
