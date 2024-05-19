@@ -20,54 +20,55 @@ func NewPaymentRepository(conn *sql.DB) *PaymentRepository {
 }
 
 func (r *PaymentRepository) Create(ctx context.Context, payment *payment_entity.Payment) error {
+	queryInsertPayment := `
+		INSERT INTO payments (
+			order_id,
+			payment_id,
+			total_items,
+			amount,
+			state,
+			created_at,
+			updated_at
+		)
+		VALUES ($1,$2,$3,$4,$5,$6,$7);
+	`
+	queryInsertPaymentItems := `
+		INSERT INTO payment_items (
+			id,
+			order_id,
+			payment_id,
+			name,
+			quantity
+		)
+		VALUES ($1,$2,$3,$4,$5);
+	`
+
 	tx, err := r.conn.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 
-	sql, params, err := goqu.
-		Insert("payments").
-		Cols("order_id", "payment_id", "total_items", "amount", "state", "created_at", "updated_at").
-		Vals(
-			goqu.Vals{
-				payment.OrderId,
-				payment.PaymentId,
-				payment.TotalItems,
-				payment.Amount,
-				payment.State,
-				payment.CreatedAt,
-				payment.UpdatedAt,
-			},
-		).
-		ToSQL()
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.ExecContext(ctx, sql, params...)
+	_, err = tx.ExecContext(ctx,
+		queryInsertPayment,
+		payment.OrderId,
+		payment.PaymentId,
+		payment.TotalItems,
+		payment.Amount,
+		payment.State,
+		payment.CreatedAt,
+		payment.UpdatedAt)
 	if err != nil {
 		return tx.Rollback()
 	}
 
 	for _, item := range payment.Items {
-		sql, params, err := goqu.
-			Insert("payment_items").
-			Cols("id", "order_id", "payment_id", "name", "quantity").
-			Vals(
-				goqu.Vals{
-					item.Id,
-					payment.OrderId,
-					payment.PaymentId,
-					item.Name,
-					item.Quantity,
-				},
-			).
-			ToSQL()
-		if err != nil {
-			return tx.Rollback()
-		}
-
-		_, err = tx.ExecContext(ctx, sql, params...)
+		_, err = tx.ExecContext(ctx,
+			queryInsertPaymentItems,
+			item.Id,
+			payment.OrderId,
+			payment.PaymentId,
+			item.Name,
+			item.Quantity)
 		if err != nil {
 			return tx.Rollback()
 		}
