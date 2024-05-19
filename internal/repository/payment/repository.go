@@ -77,9 +77,9 @@ func (r *PaymentRepository) Create(ctx context.Context, payment *payment_entity.
 }
 
 func (r *PaymentRepository) GetByID(ctx context.Context, paymentId string) (payment_entity.Payment, error) {
-
 	sql, params, err := goqu.
 		From("payments").
+		Select("order_id", "payment_id", "total_items", "amount", "state", "created_at", "updated_at").
 		Where(goqu.C("payment_id").Eq(paymentId)).
 		ToSQL()
 	if err != nil {
