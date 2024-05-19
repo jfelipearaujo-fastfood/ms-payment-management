@@ -37,5 +37,9 @@ func (h *Handler) Handle(ctx echo.Context) error {
 		return custom_error.NewHttpAppError(http.StatusInternalServerError, "internal server error", err)
 	}
 
+	if len(payments) == 0 {
+		return ctx.NoContent(http.StatusNoContent)
+	}
+
 	return ctx.JSON(200, payments)
 }
