@@ -64,7 +64,7 @@ func TestCreate(t *testing.T) {
 		err = repo.Create(ctx, &payment_entity.Payment{})
 
 		// Assert
-		assert.NoError(t, err)
+		assert.Error(t, err)
 	})
 
 	t.Run("Should rollback if an error occurs when inserting payment items", func(t *testing.T) {
@@ -95,7 +95,7 @@ func TestCreate(t *testing.T) {
 		})
 
 		// Assert
-		assert.NoError(t, err)
+		assert.Error(t, err)
 	})
 }
 

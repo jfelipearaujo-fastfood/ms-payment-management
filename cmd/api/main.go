@@ -52,6 +52,7 @@ func main() {
 
 	cloudConfig, err := awsConfig.LoadDefaultConfig(ctx)
 	if err != nil {
+		slog.ErrorContext(ctx, "error loading aws config", "error", err)
 		panic(err)
 	}
 
@@ -63,8 +64,11 @@ func main() {
 
 	dbUrl, err := secret.GetSecret(ctx, config.DbConfig.UrlSecretName)
 	if err != nil {
-		slog.Error("error getting secret", "secret_name", config.DbConfig.UrlSecretName, "error", err)
+		slog.ErrorContext(ctx, "error getting secret", "secret_name", config.DbConfig.UrlSecretName, "error", err)
 		panic(err)
+	}
+	if dbUrl == "" {
+		slog.ErrorContext(ctx, "secret is empty", "secret_name", config.DbConfig.UrlSecretName, "error", err)
 	}
 
 	config.DbConfig.Url = dbUrl

@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/entity/payment_entity"
@@ -58,7 +59,13 @@ func (r *PaymentRepository) Create(ctx context.Context, payment *payment_entity.
 		payment.CreatedAt,
 		payment.UpdatedAt)
 	if err != nil {
-		return tx.Rollback()
+		slog.ErrorContext(ctx, "error creating payment", "error", err)
+		errTx := tx.Rollback()
+		if errTx != nil {
+			slog.ErrorContext(ctx, "error rolling back transaction", "error", errTx)
+			return errTx
+		}
+		return err
 	}
 
 	for _, item := range payment.Items {
@@ -70,7 +77,13 @@ func (r *PaymentRepository) Create(ctx context.Context, payment *payment_entity.
 			item.Name,
 			item.Quantity)
 		if err != nil {
-			return tx.Rollback()
+			slog.ErrorContext(ctx, "error creating payment item", "item_id", item.Id, "error", err)
+			errTx := tx.Rollback()
+			if errTx != nil {
+				slog.ErrorContext(ctx, "error rolling back transaction", "error", errTx)
+				return errTx
+			}
+			return err
 		}
 	}
 
