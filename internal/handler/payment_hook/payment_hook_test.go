@@ -12,6 +12,7 @@ import (
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/entity/payment_entity"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/mocks"
 	service_mocks "github.com/jfelipearaujo-org/ms-payment-management/internal/service/mocks"
+	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/get_by_id"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/update"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/shared/custom_error"
 	"github.com/labstack/echo/v4"
@@ -22,6 +23,7 @@ import (
 func TestHandle(t *testing.T) {
 	t.Run("Should create a payment gateway when the payment is approved", func(t *testing.T) {
 		// Arrange
+		getPaymentByIdService := service_mocks.NewMockGetPaymentByIDService[get_by_id.GetByIdDTO](t)
 		updatePaymentService := service_mocks.NewMockUpdatePaymentService[update.UpdatePaymentDTO](t)
 		orderProductionTopicService := topic_mocks.NewMockTopicService(t)
 		updateOrderTopicService := topic_mocks.NewMockTopicService(t)
@@ -59,7 +61,7 @@ func TestHandle(t *testing.T) {
 		ctx.SetParamNames("payment_id")
 		ctx.SetParamValues(uuid.NewString())
 
-		handler := NewHandler(updatePaymentService, orderProductionTopicService, updateOrderTopicService)
+		handler := NewHandler(getPaymentByIdService, updatePaymentService, orderProductionTopicService, updateOrderTopicService)
 
 		// Act
 		err = handler.Handle(ctx)
@@ -67,6 +69,7 @@ func TestHandle(t *testing.T) {
 		// Assert
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusCreated, resp.Code)
+		getPaymentByIdService.AssertExpectations(t)
 		updatePaymentService.AssertExpectations(t)
 		orderProductionTopicService.AssertExpectations(t)
 		updateOrderTopicService.AssertExpectations(t)
@@ -74,6 +77,7 @@ func TestHandle(t *testing.T) {
 
 	t.Run("Should create a payment gateway when the payment is rejected", func(t *testing.T) {
 		// Arrange
+		getPaymentByIdService := service_mocks.NewMockGetPaymentByIDService[get_by_id.GetByIdDTO](t)
 		updatePaymentService := service_mocks.NewMockUpdatePaymentService[update.UpdatePaymentDTO](t)
 		orderProductionTopicService := topic_mocks.NewMockTopicService(t)
 		updateOrderTopicService := topic_mocks.NewMockTopicService(t)
@@ -105,7 +109,7 @@ func TestHandle(t *testing.T) {
 		ctx.SetParamNames("payment_id")
 		ctx.SetParamValues(uuid.NewString())
 
-		handler := NewHandler(updatePaymentService, orderProductionTopicService, updateOrderTopicService)
+		handler := NewHandler(getPaymentByIdService, updatePaymentService, orderProductionTopicService, updateOrderTopicService)
 
 		// Act
 		err = handler.Handle(ctx)
@@ -113,6 +117,7 @@ func TestHandle(t *testing.T) {
 		// Assert
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusCreated, resp.Code)
+		getPaymentByIdService.AssertExpectations(t)
 		updatePaymentService.AssertExpectations(t)
 		orderProductionTopicService.AssertExpectations(t)
 		updateOrderTopicService.AssertExpectations(t)
@@ -120,6 +125,7 @@ func TestHandle(t *testing.T) {
 
 	t.Run("Should return an error if the request is invalid", func(t *testing.T) {
 		// Arrange
+		getPaymentByIdService := service_mocks.NewMockGetPaymentByIDService[get_by_id.GetByIdDTO](t)
 		updatePaymentService := mocks.NewMockUpdatePaymentService[update.UpdatePaymentDTO](t)
 		orderProductionTopicService := topic_mocks.NewMockTopicService(t)
 		updateOrderTopicService := topic_mocks.NewMockTopicService(t)
@@ -145,7 +151,7 @@ func TestHandle(t *testing.T) {
 		ctx.SetParamNames("payment_id")
 		ctx.SetParamValues("invalid-payment-id")
 
-		handler := NewHandler(updatePaymentService, orderProductionTopicService, updateOrderTopicService)
+		handler := NewHandler(getPaymentByIdService, updatePaymentService, orderProductionTopicService, updateOrderTopicService)
 
 		// Act
 		err = handler.Handle(ctx)
@@ -163,6 +169,7 @@ func TestHandle(t *testing.T) {
 			Details: "request not valid, please check the fields",
 		}, he.Message)
 
+		getPaymentByIdService.AssertExpectations(t)
 		updatePaymentService.AssertExpectations(t)
 		orderProductionTopicService.AssertExpectations(t)
 		updateOrderTopicService.AssertExpectations(t)
@@ -170,6 +177,7 @@ func TestHandle(t *testing.T) {
 
 	t.Run("Should return internal server error when an unexpected error occurs", func(t *testing.T) {
 		// Arrange
+		getPaymentByIdService := service_mocks.NewMockGetPaymentByIDService[get_by_id.GetByIdDTO](t)
 		updatePaymentService := mocks.NewMockUpdatePaymentService[update.UpdatePaymentDTO](t)
 		orderProductionTopicService := topic_mocks.NewMockTopicService(t)
 		updateOrderTopicService := topic_mocks.NewMockTopicService(t)
@@ -195,7 +203,7 @@ func TestHandle(t *testing.T) {
 		ctx.SetParamNames("payment_id")
 		ctx.SetParamValues(uuid.NewString())
 
-		handler := NewHandler(updatePaymentService, orderProductionTopicService, updateOrderTopicService)
+		handler := NewHandler(getPaymentByIdService, updatePaymentService, orderProductionTopicService, updateOrderTopicService)
 
 		// Act
 		err = handler.Handle(ctx)
@@ -213,6 +221,7 @@ func TestHandle(t *testing.T) {
 			Details: "assert.AnError general error for testing",
 		}, he.Message)
 
+		getPaymentByIdService.AssertExpectations(t)
 		updatePaymentService.AssertExpectations(t)
 		orderProductionTopicService.AssertExpectations(t)
 		updateOrderTopicService.AssertExpectations(t)
@@ -220,6 +229,7 @@ func TestHandle(t *testing.T) {
 
 	t.Run("Should log error when an unexpected error occurs while publishing to order production topic", func(t *testing.T) {
 		// Arrange
+		getPaymentByIdService := service_mocks.NewMockGetPaymentByIDService[get_by_id.GetByIdDTO](t)
 		updatePaymentService := service_mocks.NewMockUpdatePaymentService[update.UpdatePaymentDTO](t)
 		orderProductionTopicService := topic_mocks.NewMockTopicService(t)
 		updateOrderTopicService := topic_mocks.NewMockTopicService(t)
@@ -255,7 +265,7 @@ func TestHandle(t *testing.T) {
 		ctx.SetParamNames("payment_id")
 		ctx.SetParamValues(uuid.NewString())
 
-		handler := NewHandler(updatePaymentService, orderProductionTopicService, updateOrderTopicService)
+		handler := NewHandler(getPaymentByIdService, updatePaymentService, orderProductionTopicService, updateOrderTopicService)
 
 		// Act
 		err = handler.Handle(ctx)
@@ -263,6 +273,7 @@ func TestHandle(t *testing.T) {
 		// Assert
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusCreated, resp.Code)
+		getPaymentByIdService.AssertExpectations(t)
 		updatePaymentService.AssertExpectations(t)
 		orderProductionTopicService.AssertExpectations(t)
 		updateOrderTopicService.AssertExpectations(t)
@@ -270,6 +281,7 @@ func TestHandle(t *testing.T) {
 
 	t.Run("Should log error when an unexpected error occurs while publishing to update order topic", func(t *testing.T) {
 		// Arrange
+		getPaymentByIdService := service_mocks.NewMockGetPaymentByIDService[get_by_id.GetByIdDTO](t)
 		updatePaymentService := service_mocks.NewMockUpdatePaymentService[update.UpdatePaymentDTO](t)
 		orderProductionTopicService := topic_mocks.NewMockTopicService(t)
 		updateOrderTopicService := topic_mocks.NewMockTopicService(t)
@@ -307,7 +319,7 @@ func TestHandle(t *testing.T) {
 		ctx.SetParamNames("payment_id")
 		ctx.SetParamValues(uuid.NewString())
 
-		handler := NewHandler(updatePaymentService, orderProductionTopicService, updateOrderTopicService)
+		handler := NewHandler(getPaymentByIdService, updatePaymentService, orderProductionTopicService, updateOrderTopicService)
 
 		// Act
 		err = handler.Handle(ctx)
@@ -315,6 +327,7 @@ func TestHandle(t *testing.T) {
 		// Assert
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusCreated, resp.Code)
+		getPaymentByIdService.AssertExpectations(t)
 		updatePaymentService.AssertExpectations(t)
 		orderProductionTopicService.AssertExpectations(t)
 		updateOrderTopicService.AssertExpectations(t)

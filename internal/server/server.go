@@ -18,6 +18,7 @@ import (
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/repository/payment"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/create"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/gateway"
+	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/get_by_id"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/get_by_order_id"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/update"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/shared/logger"
@@ -84,6 +85,7 @@ func NewServer(config *environment.Config) *Server {
 			OrderProductionTopicService: orderProductionTopicService,
 
 			GetPaymentByOrderIdService: get_by_order_id.NewService(paymentRepository),
+			GetPaymentByIDService:      get_by_id.NewService(paymentRepository),
 		},
 	}
 }
@@ -120,6 +122,7 @@ func (server *Server) registerHealthCheck(e *echo.Echo) {
 
 func (s *Server) registerPaymentHandlers(e *echo.Group) {
 	updatePaymentHandler := payment_hook.NewHandler(
+		s.Dependency.GetPaymentByIDService,
 		s.Dependency.UpdatePaymentService,
 		s.Dependency.OrderProductionTopicService,
 		s.Dependency.UpdateOrderTopicService,
