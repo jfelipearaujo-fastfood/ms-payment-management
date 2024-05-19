@@ -194,6 +194,37 @@ func (r *PaymentRepository) GetByOrderID(ctx context.Context, orderId string) ([
 		if err != nil {
 			return payments, err
 		}
+		payment.RefreshStateTitle()
+
+		sql, params, err = goqu.
+			From("payment_items").
+			Where(goqu.And(
+				goqu.Ex{"payment_id": payment.PaymentId},
+				goqu.Ex{"order_id": payment.OrderId},
+			)).
+			ToSQL()
+		if err != nil {
+			return payments, err
+		}
+
+		statement, err = r.conn.QueryContext(ctx, sql, params...)
+		if err != nil {
+			return payments, err
+		}
+		defer statement.Close()
+
+		for statement.Next() {
+			item := payment_entity.PaymentItem{}
+			err := statement.Scan(
+				&item.Id,
+				&item.Name,
+				&item.Quantity,
+			)
+			if err != nil {
+				return payments, err
+			}
+			payment.Items = append(payment.Items, item)
+		}
 
 		payments = append(payments, payment)
 	}
