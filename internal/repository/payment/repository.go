@@ -173,16 +173,16 @@ func (r *PaymentRepository) GetByOrderID(ctx context.Context, orderId string) ([
 		return payments, err
 	}
 
-	statement, err := r.conn.QueryContext(ctx, sql, params...)
+	paymentStatement, err := r.conn.QueryContext(ctx, sql, params...)
 	if err != nil {
 		return payments, err
 	}
-	defer statement.Close()
+	defer paymentStatement.Close()
 
-	for statement.Next() {
+	for paymentStatement.Next() {
 		var payment payment_entity.Payment
 
-		err = statement.Scan(
+		err = paymentStatement.Scan(
 			&payment.OrderId,
 			&payment.PaymentId,
 			&payment.TotalItems,
@@ -194,7 +194,6 @@ func (r *PaymentRepository) GetByOrderID(ctx context.Context, orderId string) ([
 		if err != nil {
 			return payments, err
 		}
-		payment.RefreshStateTitle()
 
 		sql, params, err = goqu.
 			From("payment_items").
@@ -207,15 +206,17 @@ func (r *PaymentRepository) GetByOrderID(ctx context.Context, orderId string) ([
 			return payments, err
 		}
 
-		statement, err = r.conn.QueryContext(ctx, sql, params...)
+		itemsStatement, err := r.conn.QueryContext(ctx, sql, params...)
 		if err != nil {
 			return payments, err
 		}
-		defer statement.Close()
+		defer itemsStatement.Close()
 
-		for statement.Next() {
+		payment.Items = make([]payment_entity.PaymentItem, 0)
+
+		for itemsStatement.Next() {
 			item := payment_entity.PaymentItem{}
-			err := statement.Scan(
+			err := itemsStatement.Scan(
 				&item.Id,
 				&item.Name,
 				&item.Quantity,
@@ -226,6 +227,7 @@ func (r *PaymentRepository) GetByOrderID(ctx context.Context, orderId string) ([
 			payment.Items = append(payment.Items, item)
 		}
 
+		payment.RefreshStateTitle()
 		payments = append(payments, payment)
 	}
 
