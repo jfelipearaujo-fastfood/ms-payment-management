@@ -197,6 +197,7 @@ func (r *PaymentRepository) GetByOrderID(ctx context.Context, orderId string) ([
 
 		sql, params, err = goqu.
 			From("payment_items").
+			Select("id", "name", "quantity").
 			Where(goqu.And(
 				goqu.Ex{"payment_id": payment.PaymentId},
 				goqu.Ex{"order_id": payment.OrderId},

@@ -11,3 +11,7 @@ Content-Type: application/json
 {
     "approved": true
 }
+
+### Get Payment by Order ID
+GET {{host}}/api/v1/payments/order/be6293ff-4ec0-4ed8-95c9-b36ce99aa105
+Content-Type: application/json
