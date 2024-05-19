@@ -1,6 +1,7 @@
 package create
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -10,6 +11,8 @@ import (
 func TestValidate(t *testing.T) {
 	t.Run("Should return nil if request is valid", func(t *testing.T) {
 		// Arrange
+		ctx := context.Background()
+
 		dto := CreatePaymentDTO{
 			OrderId:   uuid.NewString(),
 			PaymentId: uuid.NewString(),
@@ -30,7 +33,7 @@ func TestValidate(t *testing.T) {
 		}
 
 		// Act
-		err := dto.Validate()
+		err := dto.Validate(ctx)
 
 		// Assert
 		assert.NoError(t, err)
@@ -38,6 +41,8 @@ func TestValidate(t *testing.T) {
 
 	t.Run("Should return error if request is invalid", func(t *testing.T) {
 		// Arrange
+		ctx := context.Background()
+
 		dto := CreatePaymentDTO{
 			OrderId:    uuid.NewString(),
 			PaymentId:  uuid.NewString(),
@@ -46,7 +51,7 @@ func TestValidate(t *testing.T) {
 		}
 
 		// Act
-		err := dto.Validate()
+		err := dto.Validate(ctx)
 
 		// Assert
 		assert.Error(t, err)

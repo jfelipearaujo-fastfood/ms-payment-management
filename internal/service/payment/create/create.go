@@ -25,7 +25,7 @@ func NewService(
 }
 
 func (s *Service) Handle(ctx context.Context, request CreatePaymentDTO) (*payment_entity.Payment, error) {
-	if err := request.Validate(); err != nil {
+	if err := request.Validate(ctx); err != nil {
 		return nil, err
 	}
 

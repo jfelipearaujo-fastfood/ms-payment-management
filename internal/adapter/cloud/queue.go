@@ -113,6 +113,7 @@ func (s *AwsSqsService) processMessage(ctx context.Context, message types.Messag
 	}
 
 	if err == nil {
+		slog.InfoContext(ctx, "message unmarshalled", "request", request)
 		payment, err := s.createPayment.Handle(ctx, request)
 		if err != nil {
 			slog.ErrorContext(ctx, "error create payment", "error", err)

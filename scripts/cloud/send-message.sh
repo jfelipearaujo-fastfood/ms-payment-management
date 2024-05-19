@@ -19,7 +19,6 @@ if [ $? -eq 0 ]; then
             {
                 "id": "cfdab175-1f86-4fb0-9bcb-15f2c58df30c",
                 "name": "Hamburger",
-                "description": "A delicious hamburger",
                 "quantity": 1
             }
         ],
