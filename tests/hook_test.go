@@ -283,20 +283,8 @@ func createPostgresContainer(ctx context.Context, network *testcontainers.Docker
 		return nil, ctx, fmt.Errorf("failed to get postgres port: %w", err)
 	}
 
-	connStr := fmt.Sprintf("postgres://payment:payment@%s:%s/payment_db?sslmode=disable", postgresIp, postgresPort.Port())
-
-	conn, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return nil, ctx, fmt.Errorf("failed to connect to postgres: %w", err)
-	}
-	defer conn.Close()
-
-	if err := conn.Ping(); err != nil {
-		return nil, ctx, fmt.Errorf("failed to ping postgres: %w", err)
-	}
-
 	feat := state.retrieve(ctx)
-	feat.ConnStr = connStr
+	feat.ConnStr = fmt.Sprintf("postgres://payment:payment@%s:%s/payment_db?sslmode=disable", postgresIp, postgresPort.Port())
 
 	return container, state.enrich(ctx, feat), nil
 }
@@ -395,7 +383,7 @@ func createApiContainer(ctx context.Context, network *testcontainers.DockerNetwo
 				"API_PORT":                        "8080",
 				"API_ENV_NAME":                    "development",
 				"API_VERSION":                     "v1",
-				"DB_URL":                          "postgres://payment:payment@test:5432/payment_db?sslmode=disable",
+				"DB_URL":                          "todo",
 				"DB_URL_SECRET_NAME":              "db-secret-url",
 				"AWS_ACCESS_KEY_ID":               "test",
 				"AWS_SECRET_ACCESS_KEY":           "test",
