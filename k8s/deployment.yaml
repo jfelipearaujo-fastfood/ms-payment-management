@@ -8,18 +8,34 @@ spec:
   selector:
     matchLabels:
       app: ms-payment-management
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: ms-payment-management
     spec:
-      serviceAccountName: sa-products
+      serviceAccountName: sa-payments
       containers:
         - name: ms-payment-management
           image: jsfelipearaujo/ms-payment-management:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 8080
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 4
+            successThreshold: 1
           resources:
             limits:
               memory: 200Mi
@@ -30,20 +46,23 @@ spec:
           envFrom:
             - configMapRef:
                 name: ms-payment-management-config
-          env:
-            - name: DB_URL
-              valueFrom:
-                secretKeyRef:
-                  name: database-url
-                  key: url
-          volumeMounts:
-            - name: secrets-store-inline
-              mountPath: "/mnt/secrets-store"
-              readOnly: true
-      volumes:
-        - name: secrets-store-inline
-          csi:
-            driver: secrets-store.csi.k8s.io
-            readOnly: true
-            volumeAttributes:
-              secretProviderClass: "aws-secrets"
+          # env:
+          #   - name: DB_URL
+          #     valueFrom:
+          #       secretKeyRef:
+          #         name: database-url
+          #         key: url
+          # volumeMounts:
+          #   - name: secrets-store-inline
+          #     mountPath: "/mnt/secrets-store"
+          #     readOnly: true
+      terminationGracePeriodSeconds: 30
+      nodeSelector: {}
+      tolerations: []
+      # volumes:
+      #   - name: secrets-store-inline
+      #     csi:
+      #       driver: secrets-store.csi.k8s.io
+      #       readOnly: true
+      #       volumeAttributes:
+      #         secretProviderClass: "aws-secrets"

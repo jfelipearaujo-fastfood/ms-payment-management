@@ -5,9 +5,13 @@ GET {{host}}/health
 Content-Type: application/json
 
 ### Payment Webhook
-PATCH {{host}}/api/v1/payments/webhook/9dfa1386-2f52-4cca-b9aa-f9bd6887d442
+PATCH {{host}}/api/v1/payments/webhook/a5c81ac9-a549-44c5-bb09-c330116b929f?resend=true
 Content-Type: application/json
 
 {
     "approved": true
 }
+
+### Get Payment by Order ID
+GET {{host}}/api/v1/payments/order/be6293ff-4ec0-4ed8-95c9-b36ce99aa105
+Content-Type: application/json

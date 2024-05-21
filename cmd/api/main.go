@@ -10,6 +10,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsConfig "github.com/aws/aws-sdk-go-v2/config"
+
+	"github.com/jfelipearaujo-org/ms-payment-management/internal/adapter/cloud"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/environment"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/environment/loader"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/server"
@@ -45,6 +49,29 @@ func main() {
 	}
 
 	logger.SetupLog(config)
+
+	cloudConfig, err := awsConfig.LoadDefaultConfig(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "error loading aws config", "error", err)
+		panic(err)
+	}
+
+	if config.CloudConfig.IsBaseEndpointSet() {
+		cloudConfig.BaseEndpoint = aws.String(config.CloudConfig.BaseEndpoint)
+	}
+
+	secret := cloud.NewSecretService(cloudConfig)
+
+	dbUrl, err := secret.GetSecret(ctx, config.DbConfig.UrlSecretName)
+	if err != nil {
+		slog.ErrorContext(ctx, "error getting secret", "secret_name", config.DbConfig.UrlSecretName, "error", err)
+		panic(err)
+	}
+	if dbUrl == "" {
+		slog.ErrorContext(ctx, "secret is empty", "secret_name", config.DbConfig.UrlSecretName, "error", err)
+	}
+
+	config.DbConfig.Url = dbUrl
 
 	server := server.NewServer(config)
 

@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/entity/payment_entity"
@@ -20,56 +21,69 @@ func NewPaymentRepository(conn *sql.DB) *PaymentRepository {
 }
 
 func (r *PaymentRepository) Create(ctx context.Context, payment *payment_entity.Payment) error {
+	queryInsertPayment := `
+		INSERT INTO payments (
+			order_id,
+			payment_id,
+			total_items,
+			amount,
+			state,
+			created_at,
+			updated_at
+		)
+		VALUES ($1,$2,$3,$4,$5,$6,$7);
+	`
+	queryInsertPaymentItems := `
+		INSERT INTO payment_items (
+			id,
+			order_id,
+			payment_id,
+			name,
+			quantity
+		)
+		VALUES ($1,$2,$3,$4,$5);
+	`
+
 	tx, err := r.conn.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
 
-	sql, params, err := goqu.
-		Insert("payments").
-		Cols("order_id", "payment_id", "total_items", "amount", "state", "created_at", "updated_at").
-		Vals(
-			goqu.Vals{
-				payment.OrderId,
-				payment.PaymentId,
-				payment.TotalItems,
-				payment.Amount,
-				payment.State,
-				payment.CreatedAt,
-				payment.UpdatedAt,
-			},
-		).
-		ToSQL()
+	_, err = tx.ExecContext(ctx,
+		queryInsertPayment,
+		payment.OrderId,
+		payment.PaymentId,
+		payment.TotalItems,
+		payment.Amount,
+		payment.State,
+		payment.CreatedAt,
+		payment.UpdatedAt)
 	if err != nil {
+		slog.ErrorContext(ctx, "error creating payment", "error", err)
+		errTx := tx.Rollback()
+		if errTx != nil {
+			slog.ErrorContext(ctx, "error rolling back transaction", "error", errTx)
+			return errTx
+		}
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, sql, params...)
-	if err != nil {
-		return tx.Rollback()
-	}
-
 	for _, item := range payment.Items {
-		sql, params, err := goqu.
-			Insert("payment_items").
-			Cols("id", "order_id", "payment_id", "name", "quantity").
-			Vals(
-				goqu.Vals{
-					item.Id,
-					payment.OrderId,
-					payment.PaymentId,
-					item.Name,
-					item.Quantity,
-				},
-			).
-			ToSQL()
+		_, err = tx.ExecContext(ctx,
+			queryInsertPaymentItems,
+			item.Id,
+			payment.OrderId,
+			payment.PaymentId,
+			item.Name,
+			item.Quantity)
 		if err != nil {
-			return tx.Rollback()
-		}
-
-		_, err = tx.ExecContext(ctx, sql, params...)
-		if err != nil {
-			return tx.Rollback()
+			slog.ErrorContext(ctx, "error creating payment item", "item_id", item.Id, "error", err)
+			errTx := tx.Rollback()
+			if errTx != nil {
+				slog.ErrorContext(ctx, "error rolling back transaction", "error", errTx)
+				return errTx
+			}
+			return err
 		}
 	}
 
@@ -77,9 +91,9 @@ func (r *PaymentRepository) Create(ctx context.Context, payment *payment_entity.
 }
 
 func (r *PaymentRepository) GetByID(ctx context.Context, paymentId string) (payment_entity.Payment, error) {
-
 	sql, params, err := goqu.
 		From("payments").
+		Select("order_id", "payment_id", "total_items", "amount", "state", "created_at", "updated_at").
 		Where(goqu.C("payment_id").Eq(paymentId)).
 		ToSQL()
 	if err != nil {
@@ -159,16 +173,16 @@ func (r *PaymentRepository) GetByOrderID(ctx context.Context, orderId string) ([
 		return payments, err
 	}
 
-	statement, err := r.conn.QueryContext(ctx, sql, params...)
+	paymentStatement, err := r.conn.QueryContext(ctx, sql, params...)
 	if err != nil {
 		return payments, err
 	}
-	defer statement.Close()
+	defer paymentStatement.Close()
 
-	for statement.Next() {
+	for paymentStatement.Next() {
 		var payment payment_entity.Payment
 
-		err = statement.Scan(
+		err = paymentStatement.Scan(
 			&payment.OrderId,
 			&payment.PaymentId,
 			&payment.TotalItems,
@@ -181,6 +195,40 @@ func (r *PaymentRepository) GetByOrderID(ctx context.Context, orderId string) ([
 			return payments, err
 		}
 
+		sql, params, err = goqu.
+			From("payment_items").
+			Select("id", "name", "quantity").
+			Where(goqu.And(
+				goqu.Ex{"payment_id": payment.PaymentId},
+				goqu.Ex{"order_id": payment.OrderId},
+			)).
+			ToSQL()
+		if err != nil {
+			return payments, err
+		}
+
+		itemsStatement, err := r.conn.QueryContext(ctx, sql, params...)
+		if err != nil {
+			return payments, err
+		}
+		defer itemsStatement.Close()
+
+		payment.Items = make([]payment_entity.PaymentItem, 0)
+
+		for itemsStatement.Next() {
+			item := payment_entity.PaymentItem{}
+			err := itemsStatement.Scan(
+				&item.Id,
+				&item.Name,
+				&item.Quantity,
+			)
+			if err != nil {
+				return payments, err
+			}
+			payment.Items = append(payment.Items, item)
+		}
+
+		payment.RefreshStateTitle()
 		payments = append(payments, payment)
 	}
 

@@ -105,27 +105,39 @@ func (s *AwsSqsService) processMessage(ctx context.Context, message types.Messag
 
 	slog.InfoContext(ctx, "message received")
 
-	var request create.CreatePaymentDTO
+	var notification TopicNotification
 
-	err := json.Unmarshal([]byte(*message.Body), &request)
+	err := json.Unmarshal([]byte(*message.Body), &notification)
 	if err != nil {
 		slog.ErrorContext(ctx, "error unmarshalling message", "error", err)
-	}
+	} else {
+		if notification.Type != "Notification" {
+			slog.ErrorContext(ctx, "invalid notification type", "type", notification.Type)
+		} else {
+			var request create.CreatePaymentDTO
 
-	if err == nil {
-		payment, err := s.createPayment.Handle(ctx, request)
-		if err != nil {
-			slog.ErrorContext(ctx, "error create payment", "error", err)
-		}
-
-		if payment != nil {
-			gatewayReq := gateway.CreatePaymentGatewayDTO{
-				PaymentID: payment.PaymentId,
-				Amount:    payment.Amount,
+			err = json.Unmarshal([]byte(notification.Message), &request)
+			if err != nil {
+				slog.ErrorContext(ctx, "error unmarshalling message", "error", err)
 			}
 
-			if err := s.createPaymentGateway.Handle(ctx, gatewayReq); err != nil {
-				slog.ErrorContext(ctx, "error create payment gateway", "error", err)
+			if err == nil {
+				slog.InfoContext(ctx, "message unmarshalled", "request", request)
+				payment, err := s.createPayment.Handle(ctx, request)
+				if err != nil {
+					slog.ErrorContext(ctx, "error create payment", "error", err)
+				}
+
+				if payment != nil {
+					gatewayReq := gateway.CreatePaymentGatewayDTO{
+						PaymentID: payment.PaymentId,
+						Amount:    payment.Amount,
+					}
+
+					if err := s.createPaymentGateway.Handle(ctx, gatewayReq); err != nil {
+						slog.ErrorContext(ctx, "error create payment gateway", "error", err)
+					}
+				}
 			}
 		}
 	}

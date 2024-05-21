@@ -1,6 +1,10 @@
 package create
 
 import (
+	"context"
+
+	"log/slog"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/shared/custom_error"
 )
@@ -21,10 +25,11 @@ type CreatePaymentDTO struct {
 	Amount     float64 `json:"amount" validate:"required,gt=0"`
 }
 
-func (dto *CreatePaymentDTO) Validate() error {
+func (dto *CreatePaymentDTO) Validate(ctx context.Context) error {
 	validator := validator.New()
 
 	if err := validator.Struct(dto); err != nil {
+		slog.ErrorContext(ctx, "error validating payment", "error", err)
 		return custom_error.ErrRequestNotValid
 	}
 

@@ -64,7 +64,7 @@ func TestCreate(t *testing.T) {
 		err = repo.Create(ctx, &payment_entity.Payment{})
 
 		// Assert
-		assert.NoError(t, err)
+		assert.Error(t, err)
 	})
 
 	t.Run("Should rollback if an error occurs when inserting payment items", func(t *testing.T) {
@@ -95,7 +95,7 @@ func TestCreate(t *testing.T) {
 		})
 
 		// Assert
-		assert.NoError(t, err)
+		assert.Error(t, err)
 	})
 }
 
@@ -226,24 +226,26 @@ func TestGetByOrderID(t *testing.T) {
 				TotalItems: 1,
 				Amount:     1.0,
 				State:      payment_entity.WaitingForApproval,
-				CreatedAt:  now,
-				UpdatedAt:  now,
-			},
-			{
-				OrderId:    "order_id",
-				PaymentId:  "payment_id",
-				TotalItems: 1,
-				Amount:     1.0,
-				State:      payment_entity.WaitingForApproval,
-				CreatedAt:  now,
-				UpdatedAt:  now,
+				StateTitle: "WaitingForApproval",
+				Items: []payment_entity.PaymentItem{
+					{
+						Id:       "item_id",
+						Name:     "item",
+						Quantity: 1,
+					},
+				},
+				CreatedAt: now,
+				UpdatedAt: now,
 			},
 		}
 
 		mock.ExpectQuery("SELECT (.+)?payments(.+)?").
 			WillReturnRows(sqlmock.NewRows([]string{"order_id", "payment_id", "total_items", "amount", "state", "created_at", "updated_at"}).
-				AddRow(expectedPayments[0].OrderId, expectedPayments[0].PaymentId, expectedPayments[0].TotalItems, expectedPayments[0].Amount, expectedPayments[0].State, expectedPayments[0].CreatedAt, expectedPayments[0].UpdatedAt).
-				AddRow(expectedPayments[1].OrderId, expectedPayments[1].PaymentId, expectedPayments[1].TotalItems, expectedPayments[1].Amount, expectedPayments[1].State, expectedPayments[1].CreatedAt, expectedPayments[1].UpdatedAt))
+				AddRow(expectedPayments[0].OrderId, expectedPayments[0].PaymentId, expectedPayments[0].TotalItems, expectedPayments[0].Amount, expectedPayments[0].State, expectedPayments[0].CreatedAt, expectedPayments[0].UpdatedAt))
+
+		mock.ExpectQuery("SELECT (.+)?payment_items(.+)?").
+			WillReturnRows(sqlmock.NewRows([]string{"id", "name", "quantity"}).
+				AddRow(expectedPayments[0].Items[0].Id, expectedPayments[0].Items[0].Name, expectedPayments[0].Items[0].Quantity))
 
 		repo := NewPaymentRepository(db)
 
