@@ -13,6 +13,7 @@ require (
 	github.com/cucumber/godog v0.14.1
 	github.com/doug-martin/goqu/v9 v9.19.0
 	github.com/go-playground/validator/v10 v10.20.0
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.12.0

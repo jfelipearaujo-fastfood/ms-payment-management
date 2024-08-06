@@ -16,6 +16,8 @@ import (
 
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/network"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -27,7 +29,7 @@ var opts = godog.Options{
 	Format:      "pretty",
 	Paths:       []string{"features"},
 	Output:      colors.Colored(os.Stdout),
-	Concurrency: 4,
+	Concurrency: 1,
 }
 
 func init() {
@@ -99,6 +101,11 @@ func iSendAPaymentHookForAPayment(ctx context.Context, paymentType string) (cont
 
 	feat := state.retrieve(ctx)
 
+	token, err := generateToken(uuid.NewString(), time.Minute*10)
+	if err != nil {
+		return ctx, err
+	}
+
 	body := `{
 		"approved": true
 	}`
@@ -115,6 +122,7 @@ func iSendAPaymentHookForAPayment(ctx context.Context, paymentType string) (cont
 		return ctx, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", token)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -226,6 +234,22 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 
 		return ctx, err
 	})
+}
+
+func generateToken(userId string, expire time.Duration) (string, error) {
+	claims := jwt.MapClaims{
+		"sub": userId,
+		"exp": time.Now().Add(expire).Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	tokenString, err := token.SignedString([]byte("my-secret"))
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("Bearer %s", tokenString), nil
 }
 
 func createPostgresContainer(ctx context.Context, network *testcontainers.DockerNetwork) (testcontainers.Container, context.Context, error) {
