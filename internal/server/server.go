@@ -16,6 +16,7 @@ import (
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/handler/payment_hook"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/provider/time_provider"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/repository/payment"
+	token "github.com/jfelipearaujo-org/ms-payment-management/internal/server/middlewares"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/create"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/gateway"
 	"github.com/jfelipearaujo-org/ms-payment-management/internal/service/payment/get_by_id"
@@ -130,6 +131,7 @@ func (s *Server) registerPaymentHandlers(e *echo.Group) {
 
 	getPaymentByOrderIdHandler := get_by_order_id_handler.NewHandler(s.Dependency.GetPaymentByOrderIdService)
 
+	e.Use(token.Middleware())
 	e.PATCH("/payments/webhook/:payment_id", updatePaymentHandler.Handle)
 	e.GET("/payments/order/:order_id", getPaymentByOrderIdHandler.Handle)
 }
