@@ -185,12 +185,12 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 			return ctx, err
 		}
 
-		postgresContainer, ctx, err := createPostgresContainer(ctx, network)
+		localstack, ctx, err := createLocalstackContainer(ctx, network)
 		if err != nil {
 			return ctx, err
 		}
 
-		localstack, ctx, err := createLocalstackContainer(ctx, network)
+		postgresContainer, ctx, err := createPostgresContainer(ctx, network)
 		if err != nil {
 			return ctx, err
 		}
@@ -388,6 +388,9 @@ func createLocalstackContainer(ctx context.Context, network *testcontainers.Dock
 	if err != nil {
 		return nil, ctx, err
 	}
+
+	// wait for localstack to be ready
+	time.Sleep(time.Second * 5)
 
 	return container, ctx, nil
 }
