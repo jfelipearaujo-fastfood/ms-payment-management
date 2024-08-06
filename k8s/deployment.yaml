@@ -18,6 +18,7 @@ spec:
       labels:
         app: ms-payment-management
     spec:
+      automountServiceAccountToken: false
       serviceAccountName: sa-payments
       containers:
         - name: ms-payment-management
